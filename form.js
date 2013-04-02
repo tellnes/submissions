@@ -120,9 +120,7 @@ app.post( '/:id'
                                 , to: form.emails.join(', ')
                                 , subject: form.subject || config.get('mail:subject')
                                 , text: body
-                                , headers:  { 'X-CP-Message': doc._id
-                                            , 'X-CP-Form': form._id
-                                            }
+                                , headers:  { 'X-Submissions-Id': doc._id }
                                 }
 
               transport.sendMail(mailOptions, function (err, response) {
