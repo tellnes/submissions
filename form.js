@@ -110,7 +110,7 @@ app.post( '/:id'
             doc.timestamp = Date.now()
             doc.body = body
             doc.fields = values
-            doc.remoteAddresses = req.ips
+            doc.remoteAddress = req.ip
             doc.userAgent = req.header('user-agent')
             doc.referer = req.header('referer')
 

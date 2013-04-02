@@ -4,6 +4,8 @@ var express = require('express')
 
 var app = module.exports = express()
 
+app.enable('trust proxy')
+
 app.use(express.favicon())
 app.use('/f', require('./form'))
 app.use(express.static('public'))
