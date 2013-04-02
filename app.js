@@ -8,4 +8,4 @@ app.enable('trust proxy')
 
 app.use(express.favicon())
 app.use('/f', require('./form'))
-app.use(express.static('public'))
+app.use(express.static(path.resolve(__dirname, 'client')))
