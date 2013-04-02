@@ -1,0 +1,17 @@
+{
+  "mail": {
+    "from": "no-reply@example.com",
+    "subject": "Mail from contact page",
+    "type": "SMTP"
+  },
+
+  "messages": {
+    "success": "Yor message is sent!",
+    "error": "Something went wrong!"
+  },
+
+  "couchdb": {
+    "forms": "http://localhost:5984/submissions-forms",
+    "submissions": "http://localhost:5984/submissions-bucket"
+  }
+}
