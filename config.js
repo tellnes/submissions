@@ -8,3 +8,5 @@ nconf
       .argv()
       .file('locale', { file: path.resolve(__dirname, 'locale.json' )})
       .file('default', { file: path.resolve(__dirname, 'default.json' )})
+
+nconf.set('env', process.env.NODE_ENV || 'development')

@@ -8,7 +8,7 @@ var nodemailer = require('nodemailer')
   , url = require('url')
   , compileTemplate = require('./template').compile
 
-var env = process.env.NODE_ENV || 'develoopment'
+var env = config.get('env')
 
   , app = module.exports = express()
 
