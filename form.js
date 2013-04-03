@@ -19,7 +19,7 @@ var env = config.get('env')
 
 function loadForm(req, res, next) {
   cache.get(req.params.id, function (err, form) {
-    if (err && err.code == 'not_found') return next('route')
+    if (err && err.code === 'not_found') return next('route')
     if (err) return next(err)
     req.form = form
     next()
@@ -66,7 +66,7 @@ app.options ( '/:id'
 
 app.post( '/:id'
         , function fixContentType(req, res, next) {
-            if (isXHR(req) && req.query.type == 'json' && !req.is('application/json'))
+            if (isXHR(req) && req.query.type === 'json' && !req.is('application/json'))
               req.headers['content-type'] = 'application/json'
 
             next()
@@ -75,15 +75,13 @@ app.post( '/:id'
         , loadForm
         , accessControl
         , function handlePost(req, res, next) {
-            var xhr = isXHR(req)
-              , form = req.form
-              , body = req.body
+            var form = req.form
               , fields = []
               , values = {}
 
             if (form.required && Array.isArray(form.required)) {
               if (!form.required.every(function (field) {
-                if (!body[field]) {
+                if (!req.body[field]) {
                   next({ message: 'Missing a required field; ' + field, code: 'validate' })
                   return false
                 }
@@ -97,7 +95,7 @@ app.post( '/:id'
               fields.push.apply(fields, form.optional)
 
             fields.forEach(function (field) {
-              values[field] = body[field]
+              values[field] = req.body[field]
             })
 
             if (!form._compiled) form._compiled = compileTemplate(form.template)
@@ -184,7 +182,7 @@ function sendResponse(info) {
 
   if (isXHR(req)) {
     var json = { redirect: redirect, message: message }
-    if (env !== 'production') json.error = error
+    if (env !== 'production') json.error = info.error
     res.json(json)
     return
   }
