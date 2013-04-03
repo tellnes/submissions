@@ -11,9 +11,15 @@
     "request": "~2.16.6",
     "node-uuid": "~1.4.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "uglify-js": "~2.2.5",
+    "node-dev": "~2.0.1",
+    "jshint": "~1.1.0"
+  },
   "scripts": {
-    "dev": "node-dev cli.js --port 1337"
+    "dev": "node-dev cli.js --port 1337",
+    "minify": "uglifyjs client/submissions.src.js -c -m > client/submissions.js",
+    "lint": "jshint client/submissions.src.js; true"
   },
   "repository": null,
   "keywords": [],
