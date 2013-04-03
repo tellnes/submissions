@@ -1,40 +1,28 @@
-;(function () {
+(function () {
 
-  function $A(obj) {
-    return Array.prototype.slice.call(obj)
-  }
   function isArray(obj) {
-    return Object.prototype.toString.call(obj) == '[object Array]'
-  }
-
-  function each(arr, fn) {
-    for(var i = 0, len = arr.length; i < len; i++) {
-      fn(arr[i], i, arr)
-    }
-  }
-
-  function getAttr(elm, attr) {
-    return elm.getAttribute(attr)
+    return Object.prototype.toString.call(obj) === '[object Array]'
   }
   function hasAttr(element, attribute) {
     if (element.hasAttribute) return element.hasAttribute(attribute)
-    var node = $(element).getAttributeNode(attribute)
+    var node = element.getAttributeNode(attribute)
     return !!(node && node.specified)
   }
-
-  function addEvent(elm, name, fn) {
-    elm.addEventListener(name, fn, false)
-  }
-  function toLower(str) {
-    return str.toLowerCase()
+  function addEvent(elm, name, handler) {
+    if (elm.addEventListener) {
+      elm.addEventListener(name, handler, false)
+    } else {
+      elm.attachEvent('on' + name, function () {
+        handler.call(elm, event)
+      })
+    }
   }
   function include(arr, needle) {
     return !!~arr.indexOf(needle)
   }
 
-
   var extractValues = (function () {
-    var fields = ['input', 'textarea', 'select']
+    var fields = ['INPUT', 'TEXTAREA', 'SELECT']
 
     function optionValue(opt) {
       return hasAttr(opt, 'value') ? opt.value : opt.text
@@ -46,7 +34,7 @@
     }
 
     function selectMany(element) {
-      var values, length = element.length
+      var length = element.length
       if (!length) return null
 
       for (var i = 0, values = []; i < length; i++) {
@@ -56,7 +44,7 @@
       return values
     }
 
-    return function (form, options) {
+    return function (form) {
       var elements = form.getElementsByTagName('*')
         , result = {}
         , element
@@ -65,31 +53,31 @@
         , value
         , type
 
-      for (i = 0; element = elements[i]; i++) {
+      for (i = 0; (element = elements[i]); i++) {
         type = element.type
         name = element.name
 
-        if ( !include(fields, toLower(element.tagName))
-          || element.disabled
-          || !name
-          || type === 'file'
-          || type === 'submit'
+        if  ( !include(fields, element.tagName) ||
+              element.disabled                  ||
+              !name                             ||
+              type === 'file'                   ||
+              type === 'submit'
             ) continue
 
         if (type === 'checkbox' || type === 'radio') {
           value = element.checked ? element.value : null
 
-        } else if (type == 'select-one') {
+        } else if (type === 'select-one') {
           value = selectOne(element)
 
-        } else if (type == 'select-multiple') {
+        } else if (type === 'select-multiple') {
           value = selectMany(element)
 
         } else {
           value = element.value
         }
 
-        if (value == null) continue
+        if (value === null || value === undefined) continue
 
         if (name in result) {
           if (!isArray(result[name])) result[name] = [result[name]]
@@ -115,33 +103,44 @@
     if (window.ActiveXObject) {
       var axs = [ 'Msxml2.XMLHTTP.6.0'
                 , 'Msxml2.XMLHTTP.3.0'
-                ,'Microsoft.XMLHTTP'
+                , 'Microsoft.XMLHTTP'
                 ]
-      for (var i = 0; i < axs.length; i++) {
+        , i = 0
+        , ax
+        , axObj
+
+      for (; i < axs.length; i++) {
         try {
-          var ax = new (window.ActiveXObject)(axs[i])
-          return function () {
-            if (ax) {
-              var ax_ = ax
-              ax = null
-              return ax_
-            } else {
-              return new(window.ActiveXObject)(axs[i])
-            }
-          }
+          ax = axs[i]
+          axObj = new (window.ActiveXObject)(ax)
+          break
         } catch (e) {}
       }
+
+      if (!axObj) return
+
+      return function () {
+        if (axObj) {
+          var axObjCopy = axObj
+          axObj = null
+          return axObjCopy
+        } else {
+          return new (window.ActiveXObject)(ax)
+        }
+      }
+
     }
   }())
 
   function getEndpoint() {
-    var scripts = $A(document.scripts)
-      , i = scripts.length - 1
+    var scripts = document.scripts
+      , i = 0
+      , script
       , src
       , uri = '/'
-    for (; i >= 0; i--) {
-      src = scripts[i].src
-      if (src.slice(src.length - 15) === '/submissions.js') {
+    while ((script = scripts[i++])) {
+      src = script.src
+      if (src && src.slice(src.length - 15) === '/submissions.js') {
         uri = src.slice(0, src.length - 14)
         break
       }
@@ -150,7 +149,7 @@
     return uri + 'f/'
   }
 
-  function submit(url, data, cb) {
+  function submitForm(url, data, cb) {
     url += (include(url, '?') ? '&' : '?') + 'xhr'
 
     var xhr = new XHR()
@@ -169,9 +168,9 @@
     xhr.onerror = finish
     xhr.onload = finish
     xhr.onreadystatechange = function () {
-      if (xhr.readyState != 4) return
+      if (xhr.readyState !== 4) return
 
-      if (xhr.status != 200) return finish(new Error('Unexpected status code; ' + xhr.status))
+      if (xhr.status !== 200) return finish(new Error('Unexpected status code; ' + xhr.status))
       finish()
     }
 
@@ -182,35 +181,40 @@
     showMessage(err)
   }
   function showMessage(message) {
+    // TODO
     alert(message)
   }
 
-  function onload() {
+  function onsubmit(event) {
+    var form = this
+      , body = JSON.stringify(extractValues(form))
 
-    endpoint = getEndpoint()
+    submitForm(form.action, body, function (err, res) {
+      if (err) return onerror(err)
 
-    each($A(document.getElementsByTagName('form')), function (form) {
-      if (form.action.slice(0, endpoint.length) !== endpoint) return
+      try {
+        res = JSON.parse(res)
+      } catch(err) {
+        return onerror(err)
+      }
 
-      addEvent(form, 'submit', function (event) {
-        var body = JSON.stringify(extractValues(form))
-
-        submit(form.action, body, function (err, res) {
-          if (err) return onerror(err)
-
-          try {
-            res = JSON.parse(res)
-          } catch(err) {
-            return onerror(err)
-          }
-
-          if (res.error) return onerror(res.error)
-          showMessage(res.message)
-        })
-
-        event.preventDefault()
-      })
+      if (res.error) return onerror(res.error)
+      showMessage(res.message)
     })
+
+    event.preventDefault()
+  }
+
+  function onload() {
+    var endpoint = getEndpoint()
+      , forms = document.getElementsByTagName('form')
+      , i = 0
+      , form
+    while ((form = forms[i++])) {
+      if (form.action.slice(0, endpoint.length) !== endpoint) continue
+
+      addEvent(form, 'submit', onsubmit)
+    }
   }
 
   if (XHR) {
